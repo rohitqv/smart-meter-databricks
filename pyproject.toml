@@ -15,6 +15,7 @@ dev = [
     "pytest-mock>=3.12",
     "moto[s3]>=5.0",
     "ruff>=0.4",
+    "databricks-sdk>=0.20",
 ]
 
 [tool.setuptools.packages.find]
