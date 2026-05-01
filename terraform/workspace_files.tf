@@ -48,3 +48,14 @@ resource "databricks_workspace_file" "dq_silver" {
   source   = "${path.module}/../data_quality/silver/${each.value}"
   path     = "${local.workspace_root}/data_quality/silver/${each.value}"
 }
+
+resource "databricks_workspace_file" "gold_notebook" {
+  source = "${path.module}/../notebooks/03_gold_kpis.py"
+  path   = "${local.workspace_root}/notebooks/03_gold_kpis.py"
+}
+
+resource "databricks_workspace_file" "dq_gold" {
+  for_each = fileset("${path.module}/../data_quality/gold", "*.yaml")
+  source   = "${path.module}/../data_quality/gold/${each.value}"
+  path     = "${local.workspace_root}/data_quality/gold/${each.value}"
+}

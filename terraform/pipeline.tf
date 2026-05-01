@@ -9,7 +9,7 @@ resource "databricks_pipeline" "smart_grid" {
 
   configuration = {
     "bucket_url"       = var.bucket_url
-    "merge_historical" = "true" # flip to "false" after initial backfill
+    "merge_historical" = "false" # steady-state: NRT only
     "dq_rules_path"    = "${local.workspace_root}/data_quality"
     "target_catalog"   = local.catalog_name
   }
@@ -26,12 +26,11 @@ resource "databricks_pipeline" "smart_grid" {
     }
   }
 
-  # gold notebook added in Task 24 (uncomment when ready):
-  # library {
-  #   notebook {
-  #     path = databricks_workspace_file.gold_notebook.path
-  #   }
-  # }
+  library {
+    notebook {
+      path = databricks_workspace_file.gold_notebook.path
+    }
+  }
 
   depends_on = [databricks_schema.schemas]
 }
