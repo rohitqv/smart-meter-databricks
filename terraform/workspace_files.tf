@@ -26,3 +26,13 @@ resource "databricks_workspace_file" "bronze_notebook" {
   source = "${path.module}/../notebooks/01_bronze_ingest.py"
   path   = "${local.workspace_root}/notebooks/01_bronze_ingest.py"
 }
+
+resource "databricks_workspace_file" "nrt_simulator" {
+  source = "${path.module}/../ingestion/nrt/simulate_nrt_feed.py"
+  path   = "${local.workspace_root}/ingestion/nrt/simulate_nrt_feed.py"
+}
+
+resource "databricks_workspace_file" "nrt_init" {
+  source = "${path.module}/../ingestion/nrt/__init__.py"
+  path   = "${local.workspace_root}/ingestion/nrt/__init__.py"
+}
