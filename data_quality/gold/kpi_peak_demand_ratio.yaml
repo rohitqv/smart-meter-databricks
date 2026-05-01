@@ -1,0 +1,24 @@
+# data_quality/gold/kpi_peak_demand_ratio.yaml
+
+- check:
+    function: is_not_null
+    arguments:
+      column: zip_code
+  name: zip_code_not_null
+  criticality: error
+
+- check:
+    function: is_not_null
+    arguments:
+      column: reading_date
+  name: reading_date_not_null
+  criticality: error
+
+- check:
+    function: is_in_range
+    arguments:
+      column: peak_demand_ratio
+      min: 0.0
+      max: 100.0
+  name: peak_demand_ratio_plausible
+  criticality: warn
