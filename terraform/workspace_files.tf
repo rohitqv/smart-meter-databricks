@@ -36,3 +36,15 @@ resource "databricks_workspace_file" "nrt_init" {
   source = "${path.module}/../ingestion/nrt/__init__.py"
   path   = "${local.workspace_root}/ingestion/nrt/__init__.py"
 }
+
+resource "databricks_workspace_file" "silver_notebook" {
+  source = "${path.module}/../notebooks/02_silver_transform.py"
+  path   = "${local.workspace_root}/notebooks/02_silver_transform.py"
+}
+
+# DQX rule files — uploaded as workspace files for the notebooks to read at runtime.
+resource "databricks_workspace_file" "dq_silver" {
+  for_each = fileset("${path.module}/../data_quality/silver", "*.yaml")
+  source   = "${path.module}/../data_quality/silver/${each.value}"
+  path     = "${local.workspace_root}/data_quality/silver/${each.value}"
+}

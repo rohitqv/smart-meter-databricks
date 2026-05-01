@@ -8,10 +8,10 @@ resource "databricks_pipeline" "smart_grid" {
   edition    = "ADVANCED"
 
   configuration = {
-    "bucket_url"        = var.bucket_url
-    "merge_historical"  = "true"   # flip to "false" after initial backfill
-    "dq_rules_path"     = "${local.workspace_root}/data_quality"
-    "target_catalog"    = local.catalog_name
+    "bucket_url"       = var.bucket_url
+    "merge_historical" = "true" # flip to "false" after initial backfill
+    "dq_rules_path"    = "${local.workspace_root}/data_quality"
+    "target_catalog"   = local.catalog_name
   }
 
   library {
@@ -20,12 +20,13 @@ resource "databricks_pipeline" "smart_grid" {
     }
   }
 
-  # silver + gold notebooks added in Tasks 22 and 28 (uncomment when ready):
-  # library {
-  #   notebook {
-  #     path = databricks_workspace_file.silver_notebook.path
-  #   }
-  # }
+  library {
+    notebook {
+      path = databricks_workspace_file.silver_notebook.path
+    }
+  }
+
+  # gold notebook added in Task 24 (uncomment when ready):
   # library {
   #   notebook {
   #     path = databricks_workspace_file.gold_notebook.path
