@@ -21,3 +21,8 @@ resource "databricks_workspace_file" "historical_init" {
   source = "${path.module}/../ingestion/historical/__init__.py"
   path   = "${local.workspace_root}/ingestion/historical/__init__.py"
 }
+
+resource "databricks_workspace_file" "bronze_notebook" {
+  source = "${path.module}/../notebooks/01_bronze_ingest.py"
+  path   = "${local.workspace_root}/notebooks/01_bronze_ingest.py"
+}
