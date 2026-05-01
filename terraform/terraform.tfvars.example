@@ -1,0 +1,2 @@
+# Copy this file to terraform.tfvars (which is gitignored) and fill in your workspace URL.
+databricks_host = "https://<your-free-edition-workspace>.cloud.databricks.com"
