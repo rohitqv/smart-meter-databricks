@@ -26,3 +26,9 @@ variable "databricks_host" {
   description = "Databricks workspace URL (e.g., https://xxx.cloud.databricks.com)"
   type        = string
 }
+
+variable "merge_historical" {
+  description = "When true, the silver layer unions historical + NRT bronze tables. Set to true for the first pipeline run (backfill), then flip back to false for steady-state NRT-only operation."
+  type        = bool
+  default     = false
+}

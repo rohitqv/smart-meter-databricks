@@ -31,14 +31,19 @@ pytest tests/unit/ -v
 # 3. Generate historical data into S3
 python -m ingestion.historical.load_historical --bucket bkt-ry-smart-grid-meter-bucket
 
-# 4. Deploy workspace resources
+# 4. Deploy workspace resources (first run: merge_historical=true to backfill from S3)
 cd terraform
 terraform init
-terraform apply -auto-approve
+terraform apply -auto-approve -var merge_historical=true
 cd ..
 
-# 5. Trigger the DLT pipeline (first run: merge_historical=true)
+# 5. Trigger the DLT pipeline
 databricks pipelines start-update <pipeline-id> --full-refresh
+
+# 5b. After backfill completes, flip back to NRT-only steady state
+cd terraform
+terraform apply -auto-approve   # default: merge_historical=false
+cd ..
 
 # 6. Smoke test
 DATABRICKS_TOKEN=... pytest tests/integration/test_smoke.py -v
@@ -46,7 +51,7 @@ DATABRICKS_TOKEN=... pytest tests/integration/test_smoke.py -v
 
 ## Operational notes
 
-- **Initial backfill:** keep `merge_historical = "true"` in `terraform/pipeline.tf` for the first pipeline run, then flip to `"false"` and re-apply. NRT-only is the steady state.
+- **Initial backfill:** pass `-var merge_historical=true` to `terraform apply` for the first pipeline run, then re-apply with the default (`false`) to switch to NRT-only steady state.
 - **NRT simulator:** the cron job is created paused. Un-pause via the Databricks Workflows UI once you're confident the bronze NRT tables are picking up files.
 - **Quarantine routing:** failed DQX rows land in `silver.<table>_quarantine` (and `gold.<kpi>_quarantine`) with `_quarantined_at` and DQX failure metadata.
 

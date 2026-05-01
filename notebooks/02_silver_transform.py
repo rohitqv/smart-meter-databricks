@@ -146,22 +146,28 @@ _checked_view(
 )
 
 dlt.create_streaming_table(
-    name="dim_customer",
+    name=f"{CATALOG}.silver.dim_customer",
     comment="Silver dim_customer — SCD Type 2",
 )
 
 dlt.apply_changes(
-    target="dim_customer",
+    target=f"{CATALOG}.silver.dim_customer",
     source="dim_customer_valid_v",
     keys=["account_id"],
     sequence_by=col("sequence_struct"),
     stored_as_scd_type=2,
-    track_history_except_column_list=["_ingested_at", "_source_file", "_rescued_data"],
+    track_history_except_column_list=[
+        "_ingested_at",
+        "_source_file",
+        "_rescued_data",
+        "sequence_struct",
+        "is_not_historical_data",
+    ],
 )
 
 
 @dlt.table(
-    name="dim_customer_quarantine",
+    name=f"{CATALOG}.silver.dim_customer_quarantine",
     comment="Quarantine sink for silver.dim_customer (DQX failures)",
     table_properties={"quality": "quarantine"},
 )
@@ -188,13 +194,13 @@ _checked_view(
 )
 
 
-@dlt.table(name="dim_meter", comment="Silver dim_meter — SCD Type 1")
+@dlt.table(name=f"{CATALOG}.silver.dim_meter", comment="Silver dim_meter — SCD Type 1")
 def dim_meter():
     return dlt.read_stream("dim_meter_valid_v")
 
 
 @dlt.table(
-    name="dim_meter_quarantine",
+    name=f"{CATALOG}.silver.dim_meter_quarantine",
     comment="Quarantine sink for silver.dim_meter",
     table_properties={"quality": "quarantine"},
 )
@@ -228,12 +234,12 @@ _checked_view(
 )
 
 
-@dlt.table(name="dim_geography", comment="Silver dim_geography — SCD Type 1")
+@dlt.table(name=f"{CATALOG}.silver.dim_geography", comment="Silver dim_geography — SCD Type 1")
 def dim_geography():
     return dlt.read("dim_geography_valid_v")  # batch (non-streaming) — geography rebuilt each run
 
 
-@dlt.table(name="dim_geography_quarantine", comment="Quarantine sink for silver.dim_geography")
+@dlt.table(name=f"{CATALOG}.silver.dim_geography_quarantine", comment="Quarantine sink for silver.dim_geography")
 def dim_geography_quarantine():
     return dlt.read("dim_geography_quarantine_v")
 
@@ -254,11 +260,11 @@ _checked_view(
 )
 
 
-@dlt.table(name="fact_readings", comment="Silver fact_readings — one row per meter per reading_ts")
+@dlt.table(name=f"{CATALOG}.silver.fact_readings", comment="Silver fact_readings — one row per meter per reading_ts")
 def fact_readings():
     return dlt.read_stream("fact_readings_valid_v")
 
 
-@dlt.table(name="fact_readings_quarantine", comment="Quarantine sink for silver.fact_readings")
+@dlt.table(name=f"{CATALOG}.silver.fact_readings_quarantine", comment="Quarantine sink for silver.fact_readings")
 def fact_readings_quarantine():
     return dlt.read_stream("fact_readings_quarantine_v")

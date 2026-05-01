@@ -74,12 +74,12 @@ def _int_kpi_peak_demand_ratio():
 _checked_gold("int_kpi_peak_demand_ratio", "kpi_peak_demand_ratio")
 
 
-@dlt.table(name="kpi_peak_demand_ratio", comment="Gold KPI — peak vs avg load by zip/day")
+@dlt.table(name=f"{CATALOG}.gold.kpi_peak_demand_ratio", comment="Gold KPI — peak vs avg load by zip/day")
 def kpi_peak_demand_ratio():
     return dlt.read("kpi_peak_demand_ratio_valid_v")
 
 
-@dlt.table(name="kpi_peak_demand_ratio_quarantine", comment="Quarantine for gold.kpi_peak_demand_ratio")
+@dlt.table(name=f"{CATALOG}.gold.kpi_peak_demand_ratio_quarantine", comment="Quarantine for gold.kpi_peak_demand_ratio")
 def kpi_peak_demand_ratio_quarantine():
     return dlt.read("kpi_peak_demand_ratio_quarantine_v")
 
@@ -126,12 +126,12 @@ def _int_kpi_grid_stability_index():
 _checked_gold("int_kpi_grid_stability_index", "kpi_grid_stability_index")
 
 
-@dlt.table(name="kpi_grid_stability_index", comment="Gold KPI — hourly grid stability composite")
+@dlt.table(name=f"{CATALOG}.gold.kpi_grid_stability_index", comment="Gold KPI — hourly grid stability composite")
 def kpi_grid_stability_index():
     return dlt.read("kpi_grid_stability_index_valid_v")
 
 
-@dlt.table(name="kpi_grid_stability_index_quarantine", comment="Quarantine for gold.kpi_grid_stability_index")
+@dlt.table(name=f"{CATALOG}.gold.kpi_grid_stability_index_quarantine", comment="Quarantine for gold.kpi_grid_stability_index")
 def kpi_grid_stability_index_quarantine():
     return dlt.read("kpi_grid_stability_index_quarantine_v")
 
@@ -179,11 +179,11 @@ def _int_kpi_climate_impact_factor():
 _checked_gold("int_kpi_climate_impact_factor", "kpi_climate_impact_factor")
 
 
-@dlt.table(name="kpi_climate_impact_factor", comment="Gold KPI — daily load vs avg temp")
+@dlt.table(name=f"{CATALOG}.gold.kpi_climate_impact_factor", comment="Gold KPI — daily load vs avg temp")
 def kpi_climate_impact_factor():
     return dlt.read("kpi_climate_impact_factor_valid_v")
 
 
-@dlt.table(name="kpi_climate_impact_factor_quarantine", comment="Quarantine for gold.kpi_climate_impact_factor")
+@dlt.table(name=f"{CATALOG}.gold.kpi_climate_impact_factor_quarantine", comment="Quarantine for gold.kpi_climate_impact_factor")
 def kpi_climate_impact_factor_quarantine():
     return dlt.read("kpi_climate_impact_factor_quarantine_v")
