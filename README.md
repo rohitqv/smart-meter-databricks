@@ -19,35 +19,22 @@ workspace resources.
 
 ## Quickstart
 
+Prereqs: `uv`, `terraform >= 1.6`, `aws` CLI, `databricks` CLI, `jq`. Auth: AWS creds, `DATABRICKS_HOST`, `DATABRICKS_TOKEN`. Copy `terraform/terraform.tfvars.example` → `terraform/terraform.tfvars` and set `databricks_host`.
+
 ```bash
-# 1. Install dev deps
-uv venv --python 3.11
-source .venv/bin/activate
-uv pip install -e ".[dev]"
+make install            # venv + deps + unit tests
+make seed               # generate historical data into S3
 
-# 2. Run unit tests
-pytest tests/unit/ -v
+make tf-init
+make deploy-backfill    # terraform apply -var merge_historical=true
+make pipeline-run       # trigger first DLT update (full refresh)
+make verify             # SHOW TABLES across bronze/silver/gold
 
-# 3. Generate historical data into S3
-python -m ingestion.historical.load_historical --bucket bkt-ry-smart-grid-meter-bucket
-
-# 4. Deploy workspace resources (first run: merge_historical=true to backfill from S3)
-cd terraform
-terraform init
-terraform apply -auto-approve -var merge_historical=true
-cd ..
-
-# 5. Trigger the DLT pipeline
-databricks pipelines start-update <pipeline-id> --full-refresh
-
-# 5b. After backfill completes, flip back to NRT-only steady state
-cd terraform
-terraform apply -auto-approve   # default: merge_historical=false
-cd ..
-
-# 6. Smoke test
-DATABRICKS_TOKEN=... pytest tests/integration/test_smoke.py -v
+make deploy             # flip back to merge_historical=false
+make smoke              # integration smoke test
 ```
+
+`make help` lists all targets. Override defaults inline: `make seed BUCKET=other-bucket`.
 
 ## Operational notes
 
