@@ -1,0 +1,41 @@
+# data_quality/silver/fact_readings.yaml
+
+- check:
+    function: is_not_null
+    arguments:
+      column: meter_id
+  name: meter_id_not_null
+  criticality: error
+
+- check:
+    function: is_not_null
+    arguments:
+      column: reading_ts
+  name: reading_ts_parseable
+  criticality: error
+
+- check:
+    function: is_in_range
+    arguments:
+      column: kwh
+      min: 0.0
+      max: 1000.0
+  name: kwh_plausible
+  criticality: error
+
+- check:
+    function: is_in_range
+    arguments:
+      column: voltage
+      min: 90.0
+      max: 260.0
+  name: voltage_plausible
+  criticality: error
+
+- check:
+    function: is_in_list
+    arguments:
+      column: status_code_canonical
+      allowed: [active, inactive, error, maintenance]
+  name: status_code_canonical_known
+  criticality: warn
