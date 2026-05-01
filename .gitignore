@@ -223,12 +223,9 @@ terraform/*.tfstate
 terraform/*.tfstate.backup
 terraform/.terraform.lock.hcl
 
-# Python
-__pycache__/
-*.pyc
-.pytest_cache/
-.venv/
-*.egg-info/
+# macOS
+.DS_Store
+**/.DS_Store
 
 # Plans & specs (working docs, not committed)
 docs/superpowers/specs/

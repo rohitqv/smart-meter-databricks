@@ -18,7 +18,12 @@ workspace resources.
 
 ## Quickstart
 
-See `docs/superpowers/plans/2026-05-01-smart-grid-meter.md` for the full implementation walk-through.
+```bash
+uv venv --python 3.11
+source .venv/bin/activate
+uv pip install -e ".[dev]"
+pytest
+```
 
 Steady-state runtime config: `merge_historical = False` (NRT-only).
 For initial backfill: temporarily set `merge_historical = True`, run pipeline once, flip back.
@@ -35,4 +40,10 @@ s3://bkt-ry-smart-grid-meter-bucket/
 
 ## Constraints
 
-Databricks Free Edition limits — see `docs/superpowers/specs/2026-05-01-smart-grid-meter-design.md` § 2.
+Databricks Free Edition hard limits shape the design:
+
+- Serverless-only compute (no classic clusters or job compute)
+- One DLT pipeline per type (single bronze, single silver, single gold pipeline)
+- S3 external locations supported via Unity Catalog
+- No account-level APIs (workspace-scoped operations only)
+- Single workspace deployment
