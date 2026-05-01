@@ -2,7 +2,7 @@
 """NRT feed simulator. Each invocation appends a small batch of rows per source
 to s3://.../raw/nrt/<table>/dt=YYYY-MM-DD/<table>_<UTC-ts>_0000.json.
 
-Designed to be triggered on a cron (every 5 min). Auto Loader on the bronze
+Designed to be triggered on a cron (every 15 min). Auto Loader on the bronze
 streaming tables picks up the new files automatically.
 """
 from __future__ import annotations

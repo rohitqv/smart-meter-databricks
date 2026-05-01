@@ -2,8 +2,6 @@
 from datetime import datetime, timezone
 from unittest.mock import patch
 
-import pytest
-
 from ingestion.nrt.simulate_nrt_feed import generate_tick
 
 
