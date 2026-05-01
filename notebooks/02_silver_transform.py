@@ -89,3 +89,81 @@ def int_grid_events_vw():
         df.withColumn("event_ts", to_timestamp(col("timestamp"))),
         event_time_col="event_ts",
     )
+
+
+# ---------------------------------------------------------------------------
+# DQX helpers — shared by all silver tables
+# ---------------------------------------------------------------------------
+import yaml
+from databricks.labs.dqx.engine import DQEngine
+from databricks.sdk import WorkspaceClient
+
+
+def _load_rules(layer: str, table: str) -> list[dict]:
+    path = f"{DQ_RULES_PATH}/{layer}/{table}.yaml"
+    with open(path, "r") as f:
+        return yaml.safe_load(f)
+
+
+def _checked_view(source_view: str, layer: str, table: str, transform=lambda df: df):
+    """Define two views from one DQX run, named <table>_valid_v and <table>_quarantine_v.
+    Consumer tables read from these to avoid running DQX twice. The `_v` suffix
+    avoids name collisions with the consumer @dlt.table definitions.
+    """
+    engine = DQEngine(WorkspaceClient())
+    rules = _load_rules(layer, table)
+
+    @dlt.view(name=f"{table}_valid_v")
+    def _valid():
+        df = transform(dlt.read_stream(source_view))
+        valid, _ = engine.apply_checks_by_metadata_and_split(df, rules)
+        return valid
+
+    @dlt.view(name=f"{table}_quarantine_v")
+    def _quarantine():
+        df = transform(dlt.read_stream(source_view))
+        _, quarantine = engine.apply_checks_by_metadata_and_split(df, rules)
+        return quarantine.withColumn("_quarantined_at", current_timestamp())
+
+
+# ---------------------------------------------------------------------------
+# dim_customer (SCD2) — sources the valid half; quarantine half goes to its own table
+# ---------------------------------------------------------------------------
+
+def _customer_transform(df: DataFrame) -> DataFrame:
+    return (
+        df
+        .withColumn("name", trim(col("name")))
+        .withColumn("service_type_canonical", lower(col("service_type")))
+    )
+
+
+_checked_view(
+    source_view="int_customer_scd2_vw",
+    layer="silver",
+    table="dim_customer",
+    transform=_customer_transform,
+)
+
+dlt.create_streaming_table(
+    name="dim_customer",
+    comment="Silver dim_customer — SCD Type 2",
+)
+
+dlt.apply_changes(
+    target="dim_customer",
+    source="dim_customer_valid_v",
+    keys=["account_id"],
+    sequence_by=col("sequence_struct"),
+    stored_as_scd_type=2,
+    track_history_except_column_list=["_ingested_at", "_source_file", "_rescued_data"],
+)
+
+
+@dlt.table(
+    name="dim_customer_quarantine",
+    comment="Quarantine sink for silver.dim_customer (DQX failures)",
+    table_properties={"quality": "quarantine"},
+)
+def dim_customer_quarantine():
+    return dlt.read_stream("dim_customer_quarantine_v")
