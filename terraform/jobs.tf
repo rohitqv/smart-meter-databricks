@@ -25,9 +25,9 @@ resource "databricks_job" "nrt_simulator" {
   name = "${local.catalog_name}_nrt_ingestion_simulator"
 
   schedule {
-    quartz_cron_expression = "0 */15 * * * ?"   # every 15 minutes
+    quartz_cron_expression = "0 */15 * * * ?" # every 15 minutes
     timezone_id            = "Asia/Kolkata"
-    pause_status           = "PAUSED"             # un-pause manually after first verify
+    pause_status           = "PAUSED" # un-pause manually after first verify
   }
 
   task {
