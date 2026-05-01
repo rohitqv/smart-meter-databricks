@@ -167,3 +167,98 @@ dlt.apply_changes(
 )
 def dim_customer_quarantine():
     return dlt.read_stream("dim_customer_quarantine_v")
+
+
+# ---------------------------------------------------------------------------
+# dim_meter (SCD1 — latest version per meter_id)
+# ---------------------------------------------------------------------------
+
+def _meter_transform(df: DataFrame) -> DataFrame:
+    return df.withColumn(
+        "model_canonical",
+        upper(regexp_replace(col("model"), "_", "-")),
+    )
+
+
+_checked_view(
+    source_view="int_smart_meter_vw",
+    layer="silver",
+    table="dim_meter",
+    transform=_meter_transform,
+)
+
+
+@dlt.table(name="dim_meter", comment="Silver dim_meter — SCD Type 1")
+def dim_meter():
+    return dlt.read_stream("dim_meter_valid_v")
+
+
+@dlt.table(
+    name="dim_meter_quarantine",
+    comment="Quarantine sink for silver.dim_meter",
+    table_properties={"quality": "quarantine"},
+)
+def dim_meter_quarantine():
+    return dlt.read_stream("dim_meter_quarantine_v")
+
+
+# ---------------------------------------------------------------------------
+# dim_geography (constructed from weather_station + customer zip)
+# ---------------------------------------------------------------------------
+
+@dlt.view(name="int_dim_geography")
+def _int_dim_geography():
+    weather = dlt.read("int_weather_station_vw").select(
+        col("station_id"), col("lat"), col("lon"),
+    ).dropDuplicates(["station_id"])
+    customer_zips = (
+        dlt.read("int_customer_scd2_vw")
+        .select(col("zip_code"))
+        .filter(col("zip_code").isNotNull())
+        .dropDuplicates()
+    )
+    # Cartesian-style enrichment is OK at this scale; for production use a proper geo-join.
+    return customer_zips.crossJoin(weather)
+
+
+_checked_view(
+    source_view="int_dim_geography",
+    layer="silver",
+    table="dim_geography",
+)
+
+
+@dlt.table(name="dim_geography", comment="Silver dim_geography — SCD Type 1")
+def dim_geography():
+    return dlt.read("dim_geography_valid_v")  # batch (non-streaming) — geography rebuilt each run
+
+
+@dlt.table(name="dim_geography_quarantine", comment="Quarantine sink for silver.dim_geography")
+def dim_geography_quarantine():
+    return dlt.read("dim_geography_quarantine_v")
+
+
+# ---------------------------------------------------------------------------
+# fact_readings
+# ---------------------------------------------------------------------------
+
+def _readings_transform(df: DataFrame) -> DataFrame:
+    return df.withColumn("status_code_canonical", lower(col("status_code")))
+
+
+_checked_view(
+    source_view="int_meter_readings_vw",
+    layer="silver",
+    table="fact_readings",
+    transform=_readings_transform,
+)
+
+
+@dlt.table(name="fact_readings", comment="Silver fact_readings — one row per meter per reading_ts")
+def fact_readings():
+    return dlt.read_stream("fact_readings_valid_v")
+
+
+@dlt.table(name="fact_readings_quarantine", comment="Quarantine sink for silver.fact_readings")
+def fact_readings_quarantine():
+    return dlt.read_stream("fact_readings_quarantine_v")
