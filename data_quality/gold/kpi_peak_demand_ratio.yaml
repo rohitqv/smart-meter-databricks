@@ -18,7 +18,7 @@
     function: is_in_range
     arguments:
       column: peak_demand_ratio
-      min: 0.0
-      max: 100.0
+      min_limit: 0.0
+      max_limit: 100.0
   name: peak_demand_ratio_plausible
   criticality: warn

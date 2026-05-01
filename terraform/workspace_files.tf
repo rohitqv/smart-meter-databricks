@@ -22,9 +22,10 @@ resource "databricks_workspace_file" "historical_init" {
   path   = "${local.workspace_root}/ingestion/historical/__init__.py"
 }
 
-resource "databricks_workspace_file" "bronze_notebook" {
-  source = "${path.module}/../notebooks/01_bronze_ingest.py"
-  path   = "${local.workspace_root}/notebooks/01_bronze_ingest.py"
+resource "databricks_notebook" "bronze_notebook" {
+  source   = "${path.module}/../notebooks/01_bronze_ingest.py"
+  path     = "${local.workspace_root}/notebooks/01_bronze_ingest"
+  language = "PYTHON"
 }
 
 resource "databricks_workspace_file" "nrt_simulator" {
@@ -37,9 +38,10 @@ resource "databricks_workspace_file" "nrt_init" {
   path   = "${local.workspace_root}/ingestion/nrt/__init__.py"
 }
 
-resource "databricks_workspace_file" "silver_notebook" {
-  source = "${path.module}/../notebooks/02_silver_transform.py"
-  path   = "${local.workspace_root}/notebooks/02_silver_transform.py"
+resource "databricks_notebook" "silver_notebook" {
+  source   = "${path.module}/../notebooks/02_silver_transform.py"
+  path     = "${local.workspace_root}/notebooks/02_silver_transform"
+  language = "PYTHON"
 }
 
 # DQX rule files — uploaded as workspace files for the notebooks to read at runtime.
@@ -49,9 +51,10 @@ resource "databricks_workspace_file" "dq_silver" {
   path     = "${local.workspace_root}/data_quality/silver/${each.value}"
 }
 
-resource "databricks_workspace_file" "gold_notebook" {
-  source = "${path.module}/../notebooks/03_gold_kpis.py"
-  path   = "${local.workspace_root}/notebooks/03_gold_kpis.py"
+resource "databricks_notebook" "gold_notebook" {
+  source   = "${path.module}/../notebooks/03_gold_kpis.py"
+  path     = "${local.workspace_root}/notebooks/03_gold_kpis"
+  language = "PYTHON"
 }
 
 resource "databricks_workspace_file" "dq_gold" {

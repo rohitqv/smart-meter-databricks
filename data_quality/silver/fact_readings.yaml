@@ -18,8 +18,8 @@
     function: is_in_range
     arguments:
       column: kwh
-      min: 0.0
-      max: 1000.0
+      min_limit: 0.0
+      max_limit: 1000.0
   name: kwh_plausible
   criticality: error
 
@@ -27,8 +27,8 @@
     function: is_in_range
     arguments:
       column: voltage
-      min: 90.0
-      max: 260.0
+      min_limit: 90.0
+      max_limit: 260.0
   name: voltage_plausible
   criticality: error
 

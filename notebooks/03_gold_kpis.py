@@ -49,9 +49,9 @@ def _checked_gold(source_view: str, table: str):
 
 @dlt.view(name="int_kpi_peak_demand_ratio")
 def _int_kpi_peak_demand_ratio():
-    facts = dlt.read("fact_readings").alias("f")
-    meters = dlt.read("dim_meter").alias("m")
-    customers = dlt.read("dim_customer").alias("c").filter("__END_AT IS NULL")  # current SCD2
+    facts = dlt.read(f"{CATALOG}.silver.fact_readings").alias("f")
+    meters = dlt.read(f"{CATALOG}.silver.dim_meter").alias("m")
+    customers = dlt.read(f"{CATALOG}.silver.dim_customer").alias("c").filter("__END_AT IS NULL")  # current SCD2
 
     joined = (
         facts
@@ -90,8 +90,8 @@ def kpi_peak_demand_ratio_quarantine():
 
 @dlt.view(name="int_kpi_grid_stability_index")
 def _int_kpi_grid_stability_index():
-    facts = dlt.read("fact_readings").alias("f")
-    events = dlt.read("int_grid_events_vw").alias("e")
+    facts = dlt.read(f"{CATALOG}.silver.fact_readings").alias("f")
+    events = dlt.read("int_grid_events_batch_vw").alias("e")  # silver-notebook batch view
 
     voltage_flags = (
         facts
@@ -142,11 +142,11 @@ def kpi_grid_stability_index_quarantine():
 
 @dlt.view(name="int_kpi_climate_impact_factor")
 def _int_kpi_climate_impact_factor():
-    facts = dlt.read("fact_readings").alias("f")
-    customers = dlt.read("dim_customer").alias("c").filter("__END_AT IS NULL")
-    weather = dlt.read("int_weather_station_vw").alias("w")
-    geography = dlt.read("dim_geography").alias("g")
-    meters = dlt.read("dim_meter").alias("m")
+    facts = dlt.read(f"{CATALOG}.silver.fact_readings").alias("f")
+    customers = dlt.read(f"{CATALOG}.silver.dim_customer").alias("c").filter("__END_AT IS NULL")
+    weather = dlt.read("int_weather_station_batch_vw").alias("w")  # silver-notebook batch view
+    geography = dlt.read(f"{CATALOG}.silver.dim_geography").alias("g")
+    meters = dlt.read(f"{CATALOG}.silver.dim_meter").alias("m")
 
     daily_load = (
         facts

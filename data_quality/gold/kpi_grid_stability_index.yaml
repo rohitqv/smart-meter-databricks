@@ -11,8 +11,8 @@
     function: is_in_range
     arguments:
       column: stability_index
-      min: 0.0
-      max: 1.0
+      min_limit: 0.0
+      max_limit: 1.0
   name: stability_index_unit_interval
   criticality: error
 

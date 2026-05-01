@@ -11,8 +11,8 @@
     function: is_in_range
     arguments:
       column: lat
-      min: -90.0
-      max: 90.0
+      min_limit: -90.0
+      max_limit: 90.0
   name: lat_in_range
   criticality: error
 
@@ -20,7 +20,7 @@
     function: is_in_range
     arguments:
       column: lon
-      min: -180.0
-      max: 180.0
+      min_limit: -180.0
+      max_limit: 180.0
   name: lon_in_range
   criticality: error

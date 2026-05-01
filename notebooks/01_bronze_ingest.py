@@ -7,6 +7,7 @@ from pyspark.sql.functions import current_timestamp, lit
 
 # Pipeline parameters (set on the DLT pipeline definition; see terraform/pipeline.tf)
 BUCKET_URL = spark.conf.get("bucket_url")  # e.g., s3://bkt-ry-smart-grid-meter-bucket
+CATALOG = spark.conf.get("target_catalog")
 
 SOURCE_TABLES = [
     "meter_readings",
@@ -38,7 +39,7 @@ def _bronze_table(table: str, lane: str) -> None:
     schema_path = f"{BUCKET_URL}/_schema/{bronze_name}/"
 
     @dlt.table(
-        name=bronze_name,
+        name=f"{CATALOG}.bronze.{bronze_name}",
         comment=f"Bronze raw — {table} ({lane} lane)",
         table_properties={"quality": "bronze", "lane": lane},
     )

@@ -230,3 +230,6 @@ terraform/terraform.tfvars
 # Plans & specs (working docs, not committed)
 docs/superpowers/specs/
 docs/superpowers/plans/
+
+# Claude Code workspace settings
+.claude/

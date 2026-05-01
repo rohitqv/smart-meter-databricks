@@ -16,7 +16,7 @@ DQ_RULES_PATH = spark.conf.get("dq_rules_path")
 
 def _bronze(table: str, lane: str = "nrt") -> DataFrame:
     name = f"raw_{table}_historical" if lane == "historical" else f"raw_{table}"
-    return dlt.read_stream(name)
+    return dlt.read_stream(f"{CATALOG}.bronze.{name}")
 
 
 def _unioned_bronze(table: str) -> DataFrame:
@@ -25,6 +25,16 @@ def _unioned_bronze(table: str) -> DataFrame:
     if not MERGE_HISTORICAL:
         return nrt
     hist = _bronze(table, "historical")
+    return nrt.unionByName(hist, allowMissingColumns=True)
+
+
+def _unioned_bronze_batch(table: str) -> DataFrame:
+    """Batch (non-streaming) read of unioned bronze. Used by consumers that need
+    a snapshot for dropDuplicates/crossJoin (int_dim_geography, gold KPIs)."""
+    nrt = dlt.read(f"{CATALOG}.bronze.raw_{table}")
+    if not MERGE_HISTORICAL:
+        return nrt
+    hist = dlt.read(f"{CATALOG}.bronze.raw_{table}_historical")
     return nrt.unionByName(hist, allowMissingColumns=True)
 
 
@@ -82,12 +92,28 @@ def int_weather_station_vw():
     )
 
 
+@dlt.view(name="int_weather_station_batch_vw")
+def int_weather_station_batch_vw():
+    """Batch counterpart of int_weather_station_vw for gold KPI consumers."""
+    return _unioned_bronze_batch("weather_station").withColumn(
+        "recorded_ts", to_timestamp(col("recorded_at"))
+    )
+
+
 @dlt.view(name="int_grid_events_vw")
 def int_grid_events_vw():
     df = _unioned_bronze("grid_events")
     return _add_sequence_struct(
         df.withColumn("event_ts", to_timestamp(col("timestamp"))),
         event_time_col="event_ts",
+    )
+
+
+@dlt.view(name="int_grid_events_batch_vw")
+def int_grid_events_batch_vw():
+    """Batch counterpart of int_grid_events_vw for gold KPI consumers."""
+    return _unioned_bronze_batch("grid_events").withColumn(
+        "event_ts", to_timestamp(col("timestamp"))
     )
 
 
@@ -105,23 +131,27 @@ def _load_rules(layer: str, table: str) -> list[dict]:
         return yaml.safe_load(f)
 
 
-def _checked_view(source_view: str, layer: str, table: str, transform=lambda df: df):
+def _checked_view(source_view: str, layer: str, table: str, transform=lambda df: df, streaming: bool = True):
     """Define two views from one DQX run, named <table>_valid_v and <table>_quarantine_v.
     Consumer tables read from these to avoid running DQX twice. The `_v` suffix
     avoids name collisions with the consumer @dlt.table definitions.
+
+    streaming=False is required when the source view is a batch view (e.g.,
+    int_dim_geography), since DLT rejects dlt.read_stream on a batch view.
     """
     engine = DQEngine(WorkspaceClient())
     rules = _load_rules(layer, table)
+    read = dlt.read_stream if streaming else dlt.read
 
     @dlt.view(name=f"{table}_valid_v")
     def _valid():
-        df = transform(dlt.read_stream(source_view))
+        df = transform(read(source_view))
         valid, _ = engine.apply_checks_by_metadata_and_split(df, rules)
         return valid
 
     @dlt.view(name=f"{table}_quarantine_v")
     def _quarantine():
-        df = transform(dlt.read_stream(source_view))
+        df = transform(read(source_view))
         _, quarantine = engine.apply_checks_by_metadata_and_split(df, rules)
         return quarantine.withColumn("_quarantined_at", current_timestamp())
 
@@ -214,11 +244,13 @@ def dim_meter_quarantine():
 
 @dlt.view(name="int_dim_geography")
 def _int_dim_geography():
-    weather = dlt.read("int_weather_station_vw").select(
-        col("station_id"), col("lat"), col("lon"),
-    ).dropDuplicates(["station_id"])
+    weather = (
+        _unioned_bronze_batch("weather_station")
+        .select(col("station_id"), col("lat"), col("lon"))
+        .dropDuplicates(["station_id"])
+    )
     customer_zips = (
-        dlt.read("int_customer_scd2_vw")
+        _unioned_bronze_batch("customer_accounts")
         .select(col("zip_code"))
         .filter(col("zip_code").isNotNull())
         .dropDuplicates()
@@ -231,6 +263,7 @@ _checked_view(
     source_view="int_dim_geography",
     layer="silver",
     table="dim_geography",
+    streaming=False,
 )
 
 

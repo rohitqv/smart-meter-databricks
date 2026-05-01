@@ -19,7 +19,7 @@ PYTEST   ?= .venv/bin/pytest
 TF       ?= terraform -chdir=terraform
 
 .DEFAULT_GOAL := help
-.PHONY: help install test seed tf-init tf-plan deploy-backfill deploy \
+.PHONY: help install test seed seed-nrt tf-init tf-plan deploy-backfill deploy \
         pipeline-id pipeline-run verify smoke fmt clean destroy
 
 help: ## Show this help
@@ -33,10 +33,14 @@ install: ## Create venv, install deps, run unit tests
 test: ## Run unit tests
 	$(PYTEST) tests/unit/ -v
 
-seed: ## Generate historical data into S3
+seed: seed-nrt ## Generate historical data + one NRT tick into S3
 	$(PYTHON) -m ingestion.historical.load_historical --bucket $(BUCKET)
 	@echo "--- S3 contents ---"
 	@aws s3 ls s3://$(BUCKET)/raw/historical/ --recursive | head
+
+seed-nrt: ## Bootstrap NRT prefix with one tick (Auto Loader needs the path to exist)
+	$(PYTHON) -m ingestion.nrt.simulate_nrt_feed --bucket $(BUCKET) --rows-per-table 10
+	@aws s3 ls s3://$(BUCKET)/raw/nrt/ --recursive | head
 
 tf-init: ## terraform init
 	$(TF) init
@@ -51,7 +55,7 @@ deploy: ## terraform apply with merge_historical=false (steady state)
 	$(TF) apply -auto-approve
 
 pipeline-id: ## Print the DLT pipeline ID
-	@databricks pipelines list --output json \
+	@databricks pipelines list-pipelines --output json \
 		| jq -r '.[] | select(.name == "$(CATALOG)_pipeline") | .pipeline_id'
 
 pipeline-run: ## Trigger DLT pipeline with --full-refresh

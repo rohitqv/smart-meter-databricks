@@ -16,19 +16,19 @@ resource "databricks_pipeline" "smart_grid" {
 
   library {
     notebook {
-      path = databricks_workspace_file.bronze_notebook.path
+      path = databricks_notebook.bronze_notebook.path
     }
   }
 
   library {
     notebook {
-      path = databricks_workspace_file.silver_notebook.path
+      path = databricks_notebook.silver_notebook.path
     }
   }
 
   library {
     notebook {
-      path = databricks_workspace_file.gold_notebook.path
+      path = databricks_notebook.gold_notebook.path
     }
   }
 
