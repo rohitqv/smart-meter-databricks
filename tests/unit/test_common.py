@@ -43,7 +43,7 @@ def test_nrt_object_key_rejects_naive_datetimes():
 
 
 from ingestion._common import (
-    GeneratorContext, make_context,
+    make_context,
     gen_customers, gen_meters, gen_weather, gen_events, gen_readings,
 )
 

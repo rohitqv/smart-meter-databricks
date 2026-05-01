@@ -134,15 +134,6 @@ def gen_customers(ctx: GeneratorContext, n: int = 2000, with_dupes: int = 50) ->
     return rows
 
 
-# NOTE TO IMPLEMENTER: gen_meters, gen_weather, gen_events, gen_readings follow
-# the same shape — port the corresponding blocks from the setup notebook
-# (cells 17, sections "smart_meters", "weather_station", "grid_events",
-# "meter_readings"). Each must:
-#   1. Take (ctx, n, with_dupes, **fk_lookups) — fk_lookups carries
-#      account_ids/meter_ids/station_coords as needed for referential integrity.
-#   2. Return list[dict] with the same fields as the setup notebook.
-#   3. Preserve the 5%-orphan pattern for meter→account and reading→meter FKs.
-#   4. Use ctx.rng / ctx.fake exclusively (no module-level random).
 def gen_meters(ctx: GeneratorContext, n: int, account_ids: list[int], with_dupes: int = 30) -> list[dict]:
     """Port of cell 17 smart_meters block; injects DQ issues incl. 5% orphan FKs."""
     meter_models = ["SM-2000", "SM-3000", "SM-4000", "SM-5000", "sm-2000", "SM_2000"]
@@ -183,7 +174,7 @@ def gen_meters(ctx: GeneratorContext, n: int, account_ids: list[int], with_dupes
     return rows
 
 
-def gen_weather(ctx: GeneratorContext, n_stations: int, n_readings: int, with_dupes: int = 20) -> tuple[list[dict], dict[int, dict]]:
+def gen_weather(ctx: GeneratorContext, n_stations: int, n_readings: int, with_dupes: int = 20) -> tuple[list[dict], dict[int, dict[str, float]]]:
     """Port of cell 17 weather_station block.
 
     Returns (rows, station_coords_map). The station_coords map (station_id ->
@@ -191,7 +182,7 @@ def gen_weather(ctx: GeneratorContext, n_stations: int, n_readings: int, with_du
     gen_readings) can spatially correlate readings against fixed station
     locations.
     """
-    station_coords: dict[int, dict] = {}
+    station_coords: dict[int, dict[str, float]] = {}
     for i in range(n_stations):
         station_id = 20000 + i
         station_coords[station_id] = {
