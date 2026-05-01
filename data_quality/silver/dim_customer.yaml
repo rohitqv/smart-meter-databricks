@@ -1,0 +1,40 @@
+# data_quality/silver/dim_customer.yaml
+# DQX checks for silver.dim_customer.
+# Failed rows route to quarantine.dim_customer via apply_checks_by_metadata_and_split.
+
+- check:
+    function: is_not_null
+    arguments:
+      column: account_id
+  name: account_id_not_null
+  criticality: error
+
+- check:
+    function: is_not_null
+    arguments:
+      column: name
+  name: name_not_null
+  criticality: error
+
+- check:
+    function: regex_match
+    arguments:
+      column: zip_code
+      regex: "^[0-9]{5}$"
+  name: zip_code_5_digits
+  criticality: warn
+
+- check:
+    function: is_in_list
+    arguments:
+      column: service_type_canonical   # produced by silver normalisation
+      allowed: [residential, commercial, industrial]
+  name: service_type_canonical_known
+  criticality: error
+
+- check:
+    function: is_not_null
+    arguments:
+      column: created_at_ts            # parsed timestamp; null = unparseable
+  name: created_at_ts_parseable
+  criticality: error

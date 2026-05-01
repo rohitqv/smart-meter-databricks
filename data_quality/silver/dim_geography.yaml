@@ -1,0 +1,26 @@
+# data_quality/silver/dim_geography.yaml
+
+- check:
+    function: is_not_null
+    arguments:
+      column: zip_code
+  name: zip_code_not_null
+  criticality: error
+
+- check:
+    function: is_in_range
+    arguments:
+      column: lat
+      min_limit: -90.0
+      max_limit: 90.0
+  name: lat_in_range
+  criticality: error
+
+- check:
+    function: is_in_range
+    arguments:
+      column: lon
+      min_limit: -180.0
+      max_limit: 180.0
+  name: lon_in_range
+  criticality: error

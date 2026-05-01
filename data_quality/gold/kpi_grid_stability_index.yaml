@@ -1,0 +1,24 @@
+# data_quality/gold/kpi_grid_stability_index.yaml
+
+- check:
+    function: is_not_null
+    arguments:
+      column: zip_code
+  name: zip_code_not_null
+  criticality: error
+
+- check:
+    function: is_in_range
+    arguments:
+      column: stability_index
+      min_limit: 0.0
+      max_limit: 1.0
+  name: stability_index_unit_interval
+  criticality: error
+
+- check:
+    function: is_not_null
+    arguments:
+      column: window_end
+  name: window_end_not_null
+  criticality: error

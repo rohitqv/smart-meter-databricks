@@ -216,3 +216,20 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/terraform.tfvars
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Plans & specs (working docs, not committed)
+docs/superpowers/specs/
+docs/superpowers/plans/
+
+# Claude Code workspace settings
+.claude/

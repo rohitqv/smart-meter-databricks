@@ -1,0 +1,38 @@
+# data_quality/silver/dim_meter.yaml
+
+- check:
+    function: is_not_null
+    arguments:
+      column: meter_id
+  name: meter_id_not_null
+  criticality: error
+
+- check:
+    function: is_not_null
+    arguments:
+      column: account_id
+  name: account_id_not_null
+  criticality: error
+
+- check:
+    function: regex_match
+    arguments:
+      column: model_canonical
+      regex: "^SM-[0-9]{4}$"
+  name: model_format
+  criticality: warn
+
+- check:
+    function: regex_match
+    arguments:
+      column: fw_version
+      regex: "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+  name: fw_version_format
+  criticality: warn
+
+- check:
+    function: is_not_null
+    arguments:
+      column: installation_date_parsed
+  name: installation_date_parseable
+  criticality: error
