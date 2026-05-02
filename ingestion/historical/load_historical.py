@@ -9,6 +9,21 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
+import sys
+
+# When Databricks runs this as a workspace file (interactive "Run" or
+# spark_python_task), only the script's directory ends up on sys.path, so
+# `import ingestion` fails. Add the project root (two levels up) explicitly.
+# The interactive launcher runs the file in a globals dict with no `__file__`,
+# so fall back to the compiled code object's filename via the current frame.
+try:
+    _THIS_FILE = __file__
+except NameError:
+    _THIS_FILE = sys._getframe(0).f_code.co_filename
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_THIS_FILE))))
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 from ingestion._common import (
     DEFAULT_BUCKET,

@@ -16,7 +16,7 @@ resource "databricks_job" "historical_ingestion" {
     environment_key = "default"
     spec {
       client       = "2"
-      dependencies = ["faker>=24.0", "boto3[crt]>=1.34"]
+      dependencies = ["faker>=24.0", "boto3[crt]>=1.34", "databricks-sdk>=0.20"]
     }
   }
 }
@@ -45,7 +45,7 @@ resource "databricks_job" "nrt_simulator" {
     environment_key = "default"
     spec {
       client       = "2"
-      dependencies = ["faker>=24.0", "boto3[crt]>=1.34"]
+      dependencies = ["faker>=24.0", "boto3[crt]>=1.34", "databricks-sdk>=0.20"]
     }
   }
 }

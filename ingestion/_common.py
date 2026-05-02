@@ -59,6 +59,23 @@ def nrt_object_key(table: str, ts: datetime, part: int) -> str:
 # ---------------------------------------------------------------------------
 
 def s3_client():
+    """Return a boto3 S3 client.
+
+    Local runs use the standard AWS credential chain (env / ~/.aws/credentials).
+    Databricks Free Edition serverless workers have no IAM role and no laptop
+    creds, so we pull static keys from the `aws` Databricks secret scope when
+    DATABRICKS_RUNTIME_VERSION is set. Override the scope name with the
+    AWS_SECRETS_SCOPE env var if needed.
+    """
+    if os.environ.get("DATABRICKS_RUNTIME_VERSION"):
+        from databricks.sdk.runtime import dbutils  # only available on DB runtime
+        scope = os.environ.get("AWS_SECRETS_SCOPE", "aws")
+        return boto3.client(
+            "s3",
+            region_name=DEFAULT_REGION,
+            aws_access_key_id=dbutils.secrets.get(scope=scope, key="aws_access_key_id"),
+            aws_secret_access_key=dbutils.secrets.get(scope=scope, key="aws_secret_access_key"),
+        )
     return boto3.client("s3", region_name=DEFAULT_REGION)
 
 
