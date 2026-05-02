@@ -34,9 +34,9 @@ local files ──[terraform apply]──▶ Databricks workspace ──[pipelin
 
 GitHub is parallel to this loop, not part of it.
 
-(An alternative pattern is **Databricks Repos**, which clones a git repo into
-the workspace. We didn't use it. Most teams pick one or the other; mixing them
-gets confusing.)
+The alternative — **Databricks Repos** (renamed *Git folders* in the UI),
+which clones a git repo directly into the workspace — is covered in 1.4. Most
+teams pick one or the other; mixing them gets confusing.
 
 ### 1.2 Control plane vs compute plane
 
@@ -65,6 +65,97 @@ In this repo "pipeline" specifically means a **Lakeflow Declarative Pipeline
 
 Mental shortcut: **dbt + Spark Structured Streaming + Airflow, fused into one
 product**. You declare what you want; DLT figures out how to build it.
+
+### 1.4 The alternative pattern — Databricks Repos (Git folders)
+
+Now that you've seen what gets deployed in this project (notebooks plus the
+catalog, schemas, pipeline definition, and cron job), the comparison with the
+Repos pattern is concrete enough to be useful.
+
+Databricks Repos — renamed **Git folders** in the UI — is the other way to
+get code into the workspace. Instead of Terraform reading local files and
+uploading them, you register a remote git repo with Databricks; the workspace
+then holds a real git clone pinned to a commit. The pipeline references files
+at `/Workspace/Repos/<owner>/<repo>/notebooks/...` instead of
+`/Workspace/Shared/...`.
+
+The two patterns differ on **who pushes the code, and when**.
+
+```
+github main ──[GH Action: repos update]──▶ workspace clone ──[pipeline run]──▶ DLT runtime
+```
+
+#### What triggers the pull?
+
+There is no automatic sync. A Git folder does not poll GitHub, and GitHub does
+not push to it. The folder stays on whatever commit it was last updated to
+until something explicitly tells Databricks to fast-forward. That something is
+one API call:
+
+```
+PATCH /api/2.0/repos/{id}    # CLI: databricks repos update <path> --branch main
+```
+
+That call is the equivalent of `git fetch && git checkout main` inside the
+workspace folder, against the remote it was originally cloned from. Production
+teams pick one of two triggers for it:
+
+1. **GitHub Action on `push: main`.** The merged PR fires a workflow that
+   calls `databricks repos update`. Auth via OIDC or a service-principal
+   token. Latency: seconds. This is the common pattern.
+
+   ```yaml
+   on:
+     push:
+       branches: [main]
+   jobs:
+     sync:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: databricks/setup-cli@main
+         - run: databricks repos update /Workspace/Repos/prod/smart-grid --branch main
+           env:
+             DATABRICKS_HOST:  ${{ vars.DATABRICKS_HOST }}
+             DATABRICKS_TOKEN: ${{ secrets.SP_TOKEN }}
+   ```
+
+2. **Scheduled Databricks job.** A small notebook on a cron that calls the
+   Repos API. Used when external CI can't (or shouldn't) hold credentials into
+   Databricks. Trades latency for simplicity.
+
+The merge to `main` is *not* the trigger. The thing listening for the merge —
+the Action or the cron — is.
+
+#### Post-merge lifecycle, side by side
+
+| | Git folders pattern | This project (Terraform) |
+|---|---|---|
+| Engineer loop | branch → PR → review → merge to `main` | same |
+| Sync trigger | GH Action fires on `push: main` | `terraform apply` (laptop or CI) |
+| What runs | `databricks repos update --branch main` | Provider reads local files, `POST /api/2.0/workspace/import` per file |
+| Result in workspace | Folder fast-forwards to new HEAD | Notebook contents overwritten in place |
+| Branch awareness | Yes — folder is a real clone; supports `git checkout` in the UI | No — just files; workspace doesn't know they came from git |
+| Rollback | API update to an earlier SHA | Re-apply an older Terraform revision |
+| What else gets deployed | Code only | Catalog, schemas, external locations, pipeline definition, jobs |
+
+Both designs end the same way: `/Workspace/...` holds the latest code, and the
+next pipeline run picks it up — pipeline *triggering* is independent of code
+sync in either pattern (Part 10.5).
+
+#### Why this project went Terraform instead
+
+Git folders sync **code only**. They don't create the catalog, the schemas,
+the external locations, the pipeline definition, or the NRT cron job. For
+this project — where every one of those is part of the deploy — we'd still
+need Terraform (or Databricks Asset Bundles) for everything except the
+notebook files. Splitting "notebooks via Repos, infra via IaC" is the mixing
+1.1 warns against: two tools competing for the same workspace paths, two
+sources of truth, two ways to roll back.
+
+The deciding question is roughly: *does the deploy include anything beyond
+notebooks?* If yes, an IaC tool already owns the workspace — let it own the
+notebooks too. If no (a notebook-heavy ML workflow on pre-existing infra, for
+example), Repos is the lighter pick.
 
 ---
 
@@ -168,8 +259,21 @@ Mismatched calls produce:
 - `View 'X' is not a streaming view and must be referenced using read`
 
 You *can* disable the check with `pipelines.incompatibleViewCheck.enabled =
-false`, but **don't** — the check exists because batch ops on streams produce
-undefined results.
+false`, but **don't**. Batch operations assume a finite, complete dataset; a
+stream is neither. Three concrete failures the check is protecting you from:
+
+- `count()` on a streaming view returns "however many rows had arrived by the
+  moment this micro-batch ran" — a different answer every trigger, with no
+  notion of *the* answer. Looks like a number; isn't one.
+- `dropDuplicates()` without a watermark has to remember every row ever seen
+  to know what's a duplicate. The state store grows without bound and the
+  job eventually OOMs.
+- `orderBy()` on an unbounded source has no defined endpoint to sort against,
+  so the result reflects only what's currently buffered.
+
+Spark allows these operations syntactically; the results are silently wrong
+rather than failing loudly. The compatibility check is the engine catching
+the mistake at plan time instead of letting it ship to production.
 
 ### 3.3 Why we ended up with two versions of the same view
 
