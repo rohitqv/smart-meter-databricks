@@ -12,6 +12,7 @@ resource "databricks_pipeline" "smart_grid" {
     "merge_historical" = tostring(var.merge_historical)
     "dq_rules_path"    = "${local.workspace_root}/data_quality"
     "target_catalog"   = local.catalog_name
+    "log_datadog"      = var.log_datadog
   }
 
   library {

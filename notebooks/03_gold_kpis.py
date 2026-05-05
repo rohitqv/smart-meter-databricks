@@ -1,6 +1,6 @@
 # Databricks notebook source
 # notebooks/03_gold_kpis.py
-# MAGIC %pip install databricks-labs-dqx
+# MAGIC %pip install databricks-labs-dqx datadog-api-client==2.33.1
 # COMMAND ----------
 import dlt
 from pyspark.sql import DataFrame
@@ -15,6 +15,14 @@ from databricks.sdk import WorkspaceClient
 
 CATALOG = spark.conf.get("target_catalog")
 DQ_RULES_PATH = spark.conf.get("dq_rules_path")
+
+# ── Datadog hooks (controlled by pipeline config "log_datadog") ──────────────
+_dd_mode = spark.conf.get("log_datadog", "false").lower()
+if _dd_mode in {"continuous", "by_hook"}:
+    from lib.dlt_hooks import set_heartbeat_hook, set_pipeline_delay_hook
+
+    set_pipeline_delay_hook(CATALOG, spark, dbutils)
+    set_heartbeat_hook(CATALOG, spark, dbutils)
 
 
 def _load_rules(layer: str, table: str) -> list[dict]:

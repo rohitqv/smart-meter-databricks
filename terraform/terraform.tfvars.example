@@ -1,2 +1,6 @@
-# Copy this file to terraform.tfvars (which is gitignored) and fill in your workspace URL.
+# Copy this file to terraform.tfvars (which is gitignored) and fill in your values.
 databricks_host = "https://<your-free-edition-workspace>.cloud.databricks.com"
+
+# Datadog (optional — leave empty to skip monitoring)
+dd_api_key = ""
+dd_app_key = ""
