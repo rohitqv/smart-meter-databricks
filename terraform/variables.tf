@@ -32,3 +32,31 @@ variable "merge_historical" {
   type        = bool
   default     = false
 }
+
+# ── Datadog integration ─────────────────────────────────────────────────────
+
+variable "dd_api_key" {
+  description = "Datadog API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "dd_app_key" {
+  description = "Datadog application key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "log_datadog" {
+  description = "Datadog emission mode for DLT pipelines: false, batch, continuous"
+  type        = string
+  default     = "false"
+}
+
+variable "enable_monitoring" {
+  description = "Enable Datadog monitors (set false for dev to avoid noise)"
+  type        = bool
+  default     = false
+}

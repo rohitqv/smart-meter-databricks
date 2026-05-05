@@ -51,6 +51,17 @@ resource "databricks_workspace_file" "dq_silver" {
   path     = "${local.workspace_root}/data_quality/silver/${each.value}"
 }
 
+# Datadog helper modules — uploaded as workspace files so DLT notebooks can import them.
+resource "databricks_workspace_file" "datadog_metrics" {
+  source = "${path.module}/../notebooks/lib/datadog_metrics.py"
+  path   = "${local.workspace_root}/notebooks/lib/datadog_metrics.py"
+}
+
+resource "databricks_workspace_file" "dlt_hooks" {
+  source = "${path.module}/../notebooks/lib/dlt_hooks.py"
+  path   = "${local.workspace_root}/notebooks/lib/dlt_hooks.py"
+}
+
 resource "databricks_notebook" "gold_notebook" {
   source   = "${path.module}/../notebooks/03_gold_kpis.py"
   path     = "${local.workspace_root}/notebooks/03_gold_kpis"
