@@ -331,7 +331,7 @@ One Auto Loader streaming table per (source × lane). Five sources × two lanes
 
 Bronze has no business logic. It only adds:
 - `_ingested_at` — when DLT received the row
-- `is_not_historical_data` — lane flag (NRT=1, historical=0)
+- `is_nrt` — lane flag (NRT=1, historical=0)
 - `_source_file` — provenance
 - `_rescued_data` — Auto Loader's bucket for malformed values
 
@@ -430,7 +430,7 @@ dlt.apply_changes(
     stored_as_scd_type=2,
     track_history_except_column_list=[
         "_ingested_at", "_source_file", "_rescued_data",
-        "sequence_struct", "is_not_historical_data",
+        "sequence_struct", "is_nrt",
     ],
 )
 ```
@@ -449,7 +449,7 @@ When both lanes report the same key, NRT should win.
 
 ```python
 struct(
-    col("is_not_historical_data"),  # NRT=1 > historical=0 → NRT wins ties
+    col("is_nrt"),  # NRT=1 > historical=0 → NRT wins ties
     col(event_time_col).alias("file_effective_datetime"),
     col("_ingested_at"),
 )
@@ -601,7 +601,7 @@ trigger fails with a streaming-checkpoint mismatch — see Part 8.5 for why.
 `raw/nrt/...`).
 - Loses lineage (can't tell what came from where)
 - Auto Loader would re-process them on schema changes
-- The lane flag in `is_not_historical_data` powers SCD2 ordering
+- The lane flag in `is_nrt` powers SCD2 ordering
 
 ### 8.3 How the parameter reaches the notebook
 
@@ -745,7 +745,7 @@ The alternative designs all have permanent costs:
 | Alternative | Why we didn't | Permanent cost |
 |---|---|---|
 | Always 2-source plan (union with empty historical leg) | Semantics get muddied: silver always "thinks" it has two lanes even after historical is folded in | Doubled checkpoint bookkeeping; planning overhead per micro-batch |
-| Backfill at bronze only (write historical into `raw/nrt/...`) | Loses lane provenance; Auto Loader could re-process on schema changes | Loses the `is_not_historical_data` flag that powers SCD2 ordering |
+| Backfill at bronze only (write historical into `raw/nrt/...`) | Loses lane provenance; Auto Loader could re-process on schema changes | Loses the `is_nrt` flag that powers SCD2 ordering |
 | Backfill via separate one-shot batch job | Two distinct code paths to silver | Code duplication; backfill bypasses DQX |
 
 This isn't unique to our pipeline. Production multi-tenant data platforms in

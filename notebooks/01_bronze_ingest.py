@@ -28,11 +28,11 @@ def _bronze_table(table: str, lane: str) -> None:
     if lane == "historical":
         bronze_name = f"raw_{table}_historical"
         source_path = f"{BUCKET_URL}/raw/historical/{table}/"
-        is_not_historical = lit(0)
+        is_nrt = lit(0)
     elif lane == "nrt":
         bronze_name = f"raw_{table}"
         source_path = f"{BUCKET_URL}/raw/nrt/{table}/"
-        is_not_historical = lit(1)
+        is_nrt = lit(1)
     else:
         raise ValueError(f"unknown lane: {lane}")
 
@@ -53,7 +53,7 @@ def _bronze_table(table: str, lane: str) -> None:
             .option("cloudFiles.inferColumnTypes", "true")
             .load(source_path)
             .withColumn("_ingested_at", current_timestamp())
-            .withColumn("is_not_historical_data", is_not_historical)
+            .withColumn("is_nrt", is_nrt)
             .withColumn("_source_file", lit(source_path))
         )
 

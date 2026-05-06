@@ -40,12 +40,12 @@ def _unioned_bronze_batch(table: str) -> DataFrame:
 
 def _add_sequence_struct(df: DataFrame, event_time_col: str) -> DataFrame:
     """Build the SCD2 ordering struct: (NRT-flag, event-time, ingestion-time).
-    NRT wins ties against historical because is_not_historical_data=1 > 0.
+    NRT wins ties against historical because is_nrt=1 > 0.
     """
     return df.withColumn(
         "sequence_struct",
         struct(
-            col("is_not_historical_data"),
+            col("is_nrt"),
             col(event_time_col).alias("file_effective_datetime"),
             col("_ingested_at"),
         ),
@@ -191,7 +191,7 @@ dlt.apply_changes(
         "_source_file",
         "_rescued_data",
         "sequence_struct",
-        "is_not_historical_data",
+        "is_nrt",
     ],
 )
 
