@@ -46,7 +46,7 @@ def _add_sequence_struct(df: DataFrame, event_time_col: str) -> DataFrame:
         "sequence_struct",
         struct(
             col("is_nrt"),
-            col(event_time_col).alias("file_effective_datetime"),
+            col(event_time_col).alias("event_time"),
             col("_ingested_at"),
         ),
     )
@@ -56,8 +56,8 @@ def _add_sequence_struct(df: DataFrame, event_time_col: str) -> DataFrame:
 # int_* staging tier — one per source
 # ---------------------------------------------------------------------------
 
-@dlt.view(name="int_customer_scd2_vw")
-def int_customer_scd2_vw():
+@dlt.view(name="int_customer_accounts")
+def int_customer_accounts():
     df = _unioned_bronze("customer_accounts")
     return _add_sequence_struct(
         df.withColumn("created_at_ts", to_timestamp(col("created_at"))),
@@ -65,8 +65,8 @@ def int_customer_scd2_vw():
     )
 
 
-@dlt.view(name="int_smart_meter_vw")
-def int_smart_meter_vw():
+@dlt.view(name="int_smart_meters")
+def int_smart_meters():
     df = _unioned_bronze("smart_meters")
     return _add_sequence_struct(
         df.withColumn("installation_date_parsed", to_timestamp(col("installation_date"), "yyyy-MM-dd")),
@@ -74,8 +74,8 @@ def int_smart_meter_vw():
     )
 
 
-@dlt.view(name="int_meter_readings_vw")
-def int_meter_readings_vw():
+@dlt.view(name="int_meter_readings")
+def int_meter_readings():
     df = _unioned_bronze("meter_readings")
     return _add_sequence_struct(
         df.withColumn("reading_ts", to_timestamp(col("timestamp"))),
@@ -83,38 +83,40 @@ def int_meter_readings_vw():
     )
 
 
-@dlt.view(name="int_weather_station_vw")
-def int_weather_station_vw():
+def _grid_events_canonicalize(df: DataFrame) -> DataFrame:
+    return (
+        df
+        .withColumn("event_ts", to_timestamp(col("timestamp")))
+        .withColumn("event_type_canonical", lower(col("event_type")))
+    )
+
+
+def _weather_canonicalize(df: DataFrame) -> DataFrame:
+    return df.withColumn("recorded_ts", to_timestamp(col("recorded_at")))
+
+
+@dlt.view(name="int_weather_station")
+def int_weather_station():
     df = _unioned_bronze("weather_station")
-    return _add_sequence_struct(
-        df.withColumn("recorded_ts", to_timestamp(col("recorded_at"))),
-        event_time_col="recorded_ts",
-    )
+    return _add_sequence_struct(_weather_canonicalize(df), event_time_col="recorded_ts")
 
 
-@dlt.view(name="int_weather_station_batch_vw")
-def int_weather_station_batch_vw():
-    """Batch counterpart of int_weather_station_vw for gold KPI consumers."""
-    return _unioned_bronze_batch("weather_station").withColumn(
-        "recorded_ts", to_timestamp(col("recorded_at"))
-    )
+@dlt.view(name="int_weather_station_batch")
+def int_weather_station_batch():
+    """Batch counterpart of int_weather_station for gold KPI consumers."""
+    return _weather_canonicalize(_unioned_bronze_batch("weather_station"))
 
 
-@dlt.view(name="int_grid_events_vw")
-def int_grid_events_vw():
+@dlt.view(name="int_grid_events")
+def int_grid_events():
     df = _unioned_bronze("grid_events")
-    return _add_sequence_struct(
-        df.withColumn("event_ts", to_timestamp(col("timestamp"))),
-        event_time_col="event_ts",
-    )
+    return _add_sequence_struct(_grid_events_canonicalize(df), event_time_col="event_ts")
 
 
-@dlt.view(name="int_grid_events_batch_vw")
-def int_grid_events_batch_vw():
-    """Batch counterpart of int_grid_events_vw for gold KPI consumers."""
-    return _unioned_bronze_batch("grid_events").withColumn(
-        "event_ts", to_timestamp(col("timestamp"))
-    )
+@dlt.view(name="int_grid_events_batch")
+def int_grid_events_batch():
+    """Batch counterpart of int_grid_events for gold KPI consumers."""
+    return _grid_events_canonicalize(_unioned_bronze_batch("grid_events"))
 
 
 # ---------------------------------------------------------------------------
@@ -169,7 +171,7 @@ def _customer_transform(df: DataFrame) -> DataFrame:
 
 
 _checked_view(
-    source_view="int_customer_scd2_vw",
+    source_view="int_customer_accounts",
     layer="silver",
     table="dim_customer",
     transform=_customer_transform,
@@ -217,7 +219,7 @@ def _meter_transform(df: DataFrame) -> DataFrame:
 
 
 _checked_view(
-    source_view="int_smart_meter_vw",
+    source_view="int_smart_meters",
     layer="silver",
     table="dim_meter",
     transform=_meter_transform,
@@ -286,7 +288,7 @@ def _readings_transform(df: DataFrame) -> DataFrame:
 
 
 _checked_view(
-    source_view="int_meter_readings_vw",
+    source_view="int_meter_readings",
     layer="silver",
     table="fact_readings",
     transform=_readings_transform,

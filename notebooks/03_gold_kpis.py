@@ -99,7 +99,7 @@ def kpi_peak_demand_ratio_quarantine():
 @dlt.view(name="int_kpi_grid_stability_index")
 def _int_kpi_grid_stability_index():
     facts = dlt.read(f"{CATALOG}.silver.fact_readings").alias("f")
-    events = dlt.read("int_grid_events_batch_vw").alias("e")  # silver-notebook batch view
+    events = dlt.read("int_grid_events_batch").alias("e")  # silver-notebook batch view
 
     voltage_flags = (
         facts
@@ -113,7 +113,7 @@ def _int_kpi_grid_stability_index():
 
     outage_counts = (
         events
-        .filter(col("event_type").isin("power_outage", "POWER_OUTAGE"))
+        .filter(col("event_type_canonical") == "power_outage")
         .groupBy(window(col("e.event_ts"), "1 hour").alias("w"))
         .agg(F_sum(expr("1")).alias("outage_count"))
     )
@@ -152,7 +152,7 @@ def kpi_grid_stability_index_quarantine():
 def _int_kpi_climate_impact_factor():
     facts = dlt.read(f"{CATALOG}.silver.fact_readings").alias("f")
     customers = dlt.read(f"{CATALOG}.silver.dim_customer").alias("c").filter("__END_AT IS NULL")
-    weather = dlt.read("int_weather_station_batch_vw").alias("w")  # silver-notebook batch view
+    weather = dlt.read("int_weather_station_batch").alias("w")  # silver-notebook batch view
     geography = dlt.read(f"{CATALOG}.silver.dim_geography").alias("g")
     meters = dlt.read(f"{CATALOG}.silver.dim_meter").alias("m")
 

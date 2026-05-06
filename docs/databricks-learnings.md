@@ -281,14 +281,14 @@ In `notebooks/02_silver_transform.py`:
 
 ```python
 # Streaming version — feeds SCD writes (apply_changes needs streaming sources)
-@dlt.view(name="int_weather_station_vw")
-def int_weather_station_vw():
+@dlt.view(name="int_weather_station")
+def int_weather_station():
     df = _unioned_bronze("weather_station")  # internally dlt.read_stream
     return _add_sequence_struct(...)
 
 # Batch version — feeds gold KPIs and int_dim_geography
-@dlt.view(name="int_weather_station_batch_vw")
-def int_weather_station_batch_vw():
+@dlt.view(name="int_weather_station_batch")
+def int_weather_station_batch():
     return _unioned_bronze_batch("weather_station").withColumn(  # internally dlt.read
         "recorded_ts", to_timestamp(col("recorded_at"))
     )
@@ -450,7 +450,7 @@ When both lanes report the same key, NRT should win.
 ```python
 struct(
     col("is_nrt"),  # NRT=1 > historical=0 → NRT wins ties
-    col(event_time_col).alias("file_effective_datetime"),
+    col(event_time_col).alias("event_time"),
     col("_ingested_at"),
 )
 ```
@@ -869,7 +869,7 @@ DLT abstracts this away entirely. When you write:
 ```python
 @dlt.table(name="dev_smart_grid.silver.dim_customer")
 def dim_customer():
-    return dlt.read_stream("int_customer_scd2_vw")
+    return dlt.read_stream("int_customer_accounts")
 ```
 
 DLT:
