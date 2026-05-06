@@ -30,6 +30,7 @@ def upload_to_datadog(
     timestamp: int | None = None,
     retry_count: int = 2,
     metric_name: str = DEFAULT_METRIC,
+    resource_type: str = "dlt_flow",
 ) -> bool:
     """Upload a single gauge metric to Datadog with retries.
 
@@ -46,7 +47,7 @@ def upload_to_datadog(
         metric=metric_name,
         type=MetricIntakeType.GAUGE,
         points=[MetricPoint(timestamp=ts, value=duration)],
-        resources=[MetricResource(name=task_name, type="process delay")],
+        resources=[MetricResource(name=task_name, type=resource_type)],
         tags=[
             f"client:{client_name}",
             f"env:{environment}",

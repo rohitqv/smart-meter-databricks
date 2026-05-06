@@ -3,10 +3,13 @@
 # MAGIC %pip install databricks-labs-dqx
 # COMMAND ----------
 import dlt
+import yaml
+from databricks.labs.dqx.engine import DQEngine
+from databricks.sdk import WorkspaceClient
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import (
-    col, current_timestamp, lit, struct, to_timestamp, trim, upper, lower,
-    when, regexp_extract, regexp_replace,
+    col, current_timestamp, lit, lower, regexp_replace, struct,
+    to_timestamp, trim, upper,
 )
 
 CATALOG = spark.conf.get("target_catalog")
@@ -126,10 +129,6 @@ def int_grid_events_batch():
 # ---------------------------------------------------------------------------
 # DQX helpers — shared by all silver tables
 # ---------------------------------------------------------------------------
-import yaml
-from databricks.labs.dqx.engine import DQEngine
-from databricks.sdk import WorkspaceClient
-
 
 def _load_rules(layer: str, table: str) -> list[dict]:
     path = f"{DQ_RULES_PATH}/{layer}/{table}.yaml"
