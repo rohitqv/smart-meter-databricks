@@ -3,7 +3,7 @@
 # MAGIC %pip install databricks-labs-dqx
 # COMMAND ----------
 import dlt
-from pyspark.sql.functions import current_timestamp, lit
+from pyspark.sql.functions import col, current_timestamp, lit
 
 # Pipeline parameters (set on the DLT pipeline definition; see terraform/pipeline.tf)
 BUCKET_URL = spark.conf.get("bucket_url")  # e.g., s3://bkt-ry-smart-grid-meter-bucket
@@ -54,7 +54,7 @@ def _bronze_table(table: str, lane: str) -> None:
             .load(source_path)
             .withColumn("_ingested_at", current_timestamp())
             .withColumn("is_nrt", is_nrt)
-            .withColumn("_source_file", lit(source_path))
+            .withColumn("_source_file", col("_metadata.file_path"))
         )
 
 
