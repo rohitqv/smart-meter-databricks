@@ -472,16 +472,25 @@ technical/metadata columns from SCD2 tracking.
 
 ### 6.4 SCD1 — `dim_meter`
 
-For SCD1 you don't even need `apply_changes`. Just upsert via a streaming
-table that re-derives:
+SCD1 also goes through `apply_changes`, with `stored_as_scd_type=1`:
 
 ```python
-@dlt.table(name=f"{CATALOG}.silver.dim_meter", ...)
-def dim_meter():
-    return dlt.read_stream("dim_meter_valid_v")
+dlt.create_streaming_table(name=f"{CATALOG}.silver.dim_meter", ...)
+dlt.apply_changes(
+    target=f"{CATALOG}.silver.dim_meter",
+    source="dim_meter_valid_v",
+    keys=["meter_id"],
+    sequence_by=col("sequence_struct"),
+    stored_as_scd_type=1,
+)
 ```
 
-Latest row per key wins (Delta MERGE semantics).
+Latest row per `meter_id` wins, ordered by `sequence_struct` (NRT-flag,
+event-time, ingestion-time). No `__START_AT` / `__END_AT` columns are added —
+that's the SCD1 vs SCD2 difference.
+
+A bare `@dlt.table` reading from `dim_meter_valid_v` would NOT do this — it
+just appends every valid row. `apply_changes` is what gives you the upsert.
 
 ---
 
